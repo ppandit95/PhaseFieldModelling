@@ -1,0 +1,6 @@
+
+1DTransient : 1DTransient.cpp
+	g++ -o 1DTransient 1DTransient.cpp && ./1DTransient
+	
+clean : Initial_Profile.* Output-*.* 1DTransient
+	rm Initial_Profile.* Output-*.* 1DTransient
