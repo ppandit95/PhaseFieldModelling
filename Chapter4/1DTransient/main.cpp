@@ -4,17 +4,15 @@
 #include<iostream>
 #include<fstream>
 #include<string>
-struct Params{
-	unsigned int N = 128;
-	double dx = 1;
-	double mu = 1.0;
-	double dt = 0.2;
-	double Ti = 1.0;
-	double *T,*temp;
-};
+#include "structures.hpp"
 int main(int argc, char **argv) {
 //Simulation Parameters
 	Params parameters;
+	parameters.N = 128;
+	parameters.dx = 1.0;
+	parameters.mu = 1.0;
+	parameters.dt = 0.2;
+	parameters.Ti = 1.0;
 	parameters.T = new double [parameters.N];
 	parameters.temp = new double [parameters.N];
 
