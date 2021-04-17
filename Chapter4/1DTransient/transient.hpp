@@ -15,6 +15,14 @@ public:
 	TransientProblem();
 	~TransientProblem();
 	Params GetParameters() const;
+	void initialize_field();
+	void Output() const;
+	void setup_periodic_BC();
+	void Jacobi_iteration();
+	void Output(unsigned int t) const;
+	void retransfer();
+	void solve();
+
 };
 
 
