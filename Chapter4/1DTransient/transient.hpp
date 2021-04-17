@@ -13,8 +13,8 @@ private:
 	Params parameters;
 public:
 	TransientProblem();
-
-
+	~TransientProblem();
+	Params GetParameters() const;
 };
 
 
