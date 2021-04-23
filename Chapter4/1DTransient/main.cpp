@@ -4,8 +4,8 @@
 #include<iostream>
 #include<fstream>
 #include<string>
-#include "structures.hpp"
-#include"transient.hpp"
+#include "src/structures.hpp"
+#include"src/transient.hpp"
 int main(int argc, char **argv) {
 	TransientProblem prob;
 
