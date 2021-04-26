@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
 	int Ny = 64;
 	double dx = 1.0;
 	double dy = 1.0;
-	double** con,**mu,**dfdc,**laplace_con;
+	double** con,**mu,**dfdc,**laplace_con,**laplace_dfdc;
 
 	//Time Integration Parameters
 	int nstep = 10000;
@@ -40,11 +40,13 @@ int main(int argc, char **argv) {
 	mu = new double* [Nx];
 	dfdc = new double* [Nx];
 	laplace_con = new double* [Nx];
+	laplace_dfdc = new double* [Nx];
 	for(int i=0;i<Nx;i++){
 		con[i] = new double[Ny];
 		mu[i] = new double[Ny];
 		dfdc[i] = new double[Ny];
 		laplace_con[i] = new double[Ny];
+		laplace_dfdc[i] = new double[Ny];
 	}
 	double noise = 0.02;
 	for(int i=0;i<Nx;i++){
@@ -99,6 +101,40 @@ int main(int argc, char **argv) {
 
 				//Compute functional derivative of free energy with concentration
 				dfdc[i][j] = mu[i][j] - grad_coef*laplace_con[i][j];
+
+				//Compute laplacian of functional derivative
+				if(i==0&&j==0)
+					laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1][j]-2*dfdc[i][j]+dfdc[i+Nx-1][j])
+										+ std::pow(1/dy,2)*(dfdc[i][j+1]-2*dfdc[i][j]+dfdc[i][j+Ny-1]);
+								else if(i==(Nx-1)&&j==0)
+									laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1-Nx][j]-2*dfdc[i][j]+dfdc[i-1][j])
+														+ std::pow(1/dy,2)*(dfdc[i][j+1]-2*dfdc[i][j]+dfdc[i][j+Ny-1]);
+								else if(i==(Nx-1)&&j==(Ny-1))
+									laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1-Nx][j]-2*dfdc[i][j]+dfdc[i-1][j])
+														+ std::pow(1/dy,2)*(dfdc[i][j+1-Ny]-2*dfdc[i][j]+dfdc[i][j-1]);
+								else if(i==0&&j==(Ny-1))
+									laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1][j]-2*dfdc[i][j]+dfdc[i-1+Nx][j])
+														+ std::pow(1/dy,2)*(dfdc[i][j+1-Ny]-2*dfdc[i][j]+dfdc[i][j-1]);
+								else if(i==0)
+									laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1][j]-2*dfdc[i][j]+dfdc[i+Nx-1][j]) +
+														std::pow(1/dy,2)*(dfdc[i][j+1]-2*dfdc[i][j]+dfdc[i][j-1]);
+								else if(i==(Nx-1))
+									laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1-Nx][j]-2*dfdc[i][j]+dfdc[i-1][j]) +
+														std::pow(1/dy,2)*(dfdc[i][j+1]-2*dfdc[i][j]+dfdc[i][j-1]);
+								else if(j==0)
+									laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1][j]-2*dfdc[i][j]+dfdc[i-1][j]) +
+														std::pow(1/dy,2)*(dfdc[i][j+1]-2*dfdc[i][j]+dfdc[i][j-1+Ny]);
+								else if(j==(Ny-1))
+									laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1][j]-2*dfdc[i][j]+dfdc[i-1][j]) +
+														std::pow(1/dy,2)*(dfdc[i][j+1-Ny]-2*dfdc[i][j]+dfdc[i][j-1]);
+								else
+									laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1][j]-2*dfdc[i][j]+dfdc[i-1][j]) +
+														std::pow(1/dy,2)*(dfdc[i][j+1]-2*dfdc[i][j]+dfdc[i][j-1]);
+
+				//Evolve the concentration profile
+				con[i][j] = con[i][j] + dtime*mobility*laplace_dfdc[i][j];
+				ttime += dtime;
+
 			}
 		}
 		//Write the Chemical Potential in a dat file at specific intervels
@@ -121,6 +157,16 @@ int main(int argc, char **argv) {
 			}
 			DerProf.close();
 		}
+		//Write the concentration profile at specific intervel
+		if(istep%1000 == 0){
+			std::string filename = "Concentration_Profile_t_" + std::to_string(istep) + ".dat";
+			std::ofstream ConcProf(filename);
+			for(int i=0;i<Nx;i++){
+				for(int j=0;j<Ny;j++)
+					ConcProf << i<<"\t"<<j<<"\t"<<con[i][j]<<std::endl;
+			}
+			ConcProf.close();
+		}
 
 	}
 	for(int i=0;i<Nx;i++){
@@ -128,7 +174,9 @@ int main(int argc, char **argv) {
 		delete[] mu[i];
 		delete[] dfdc[i];
 		delete[] laplace_con[i];
+		delete[] laplace_dfdc[i];
 	}
+	delete[] laplace_dfdc;
 	delete[] laplace_con;
 	delete[] dfdc;
 	delete[] mu;
