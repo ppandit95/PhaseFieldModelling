@@ -4,5 +4,5 @@ CaseStudyI : main.cpp
 run : CaseStudyI
 	./CaseStudyI 
 	
-clean : CaseStudyI Initial_Profile.dat Initial_Profile.png
-	rm CaseStudyI Initial_Profile.* 
+clean : CaseStudyI Initial_Profile.*  Chemical_Potential_at_t_* Derivative_at_t_*
+	rm CaseStudyI Initial_Profile.* Chemical_Potential_at_t_* Derivative_at_t_*
