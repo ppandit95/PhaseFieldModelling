@@ -6,13 +6,14 @@
 #include<time.h>
 #include<fstream>
 #include<cmath>
+
 int main(int argc, char **argv) {
 	//Get initial wall time
 	struct timespec begin,end;
 	clock_gettime(CLOCK_REALTIME,&begin);
 
-	//Open output file to write energy functional values at each timestep
-	//std::ofstream out("time_energ.dat");
+	//Write energy functional to dat file
+	std::ofstream energ("Gibbs_Energy.dat");
 
 	//Simulation cell parameters
 	int Nx = 64;
@@ -20,6 +21,7 @@ int main(int argc, char **argv) {
 	double dx = 1.0;
 	double dy = 1.0;
 	double** con,**mu,**dfdc,**laplace_con,**laplace_dfdc;
+	double energy;
 
 	//Time Integration Parameters
 	int nstep = 10000;
@@ -65,6 +67,7 @@ int main(int argc, char **argv) {
 
 	//Evolve with Cahn Hilliard Formulation
 	for(int istep=0;istep<nstep;istep++){
+		energy = 0.0;
 		for(int i=0;i<Nx;i++){
 			for(int j=0;j<Ny;j++){
 				//Compute the chemical potential at each time step and each point
@@ -106,37 +109,44 @@ int main(int argc, char **argv) {
 				if(i==0&&j==0)
 					laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1][j]-2*dfdc[i][j]+dfdc[i+Nx-1][j])
 										+ std::pow(1/dy,2)*(dfdc[i][j+1]-2*dfdc[i][j]+dfdc[i][j+Ny-1]);
-								else if(i==(Nx-1)&&j==0)
-									laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1-Nx][j]-2*dfdc[i][j]+dfdc[i-1][j])
+				else if(i==(Nx-1)&&j==0)
+					laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1-Nx][j]-2*dfdc[i][j]+dfdc[i-1][j])
 														+ std::pow(1/dy,2)*(dfdc[i][j+1]-2*dfdc[i][j]+dfdc[i][j+Ny-1]);
-								else if(i==(Nx-1)&&j==(Ny-1))
-									laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1-Nx][j]-2*dfdc[i][j]+dfdc[i-1][j])
+				else if(i==(Nx-1)&&j==(Ny-1))
+					laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1-Nx][j]-2*dfdc[i][j]+dfdc[i-1][j])
 														+ std::pow(1/dy,2)*(dfdc[i][j+1-Ny]-2*dfdc[i][j]+dfdc[i][j-1]);
-								else if(i==0&&j==(Ny-1))
-									laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1][j]-2*dfdc[i][j]+dfdc[i-1+Nx][j])
+				else if(i==0&&j==(Ny-1))
+					laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1][j]-2*dfdc[i][j]+dfdc[i-1+Nx][j])
 														+ std::pow(1/dy,2)*(dfdc[i][j+1-Ny]-2*dfdc[i][j]+dfdc[i][j-1]);
-								else if(i==0)
-									laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1][j]-2*dfdc[i][j]+dfdc[i+Nx-1][j]) +
+				else if(i==0)
+					laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1][j]-2*dfdc[i][j]+dfdc[i+Nx-1][j]) +
 														std::pow(1/dy,2)*(dfdc[i][j+1]-2*dfdc[i][j]+dfdc[i][j-1]);
-								else if(i==(Nx-1))
-									laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1-Nx][j]-2*dfdc[i][j]+dfdc[i-1][j]) +
+				else if(i==(Nx-1))
+					laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1-Nx][j]-2*dfdc[i][j]+dfdc[i-1][j]) +
 														std::pow(1/dy,2)*(dfdc[i][j+1]-2*dfdc[i][j]+dfdc[i][j-1]);
-								else if(j==0)
-									laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1][j]-2*dfdc[i][j]+dfdc[i-1][j]) +
+				else if(j==0)
+					laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1][j]-2*dfdc[i][j]+dfdc[i-1][j]) +
 														std::pow(1/dy,2)*(dfdc[i][j+1]-2*dfdc[i][j]+dfdc[i][j-1+Ny]);
-								else if(j==(Ny-1))
-									laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1][j]-2*dfdc[i][j]+dfdc[i-1][j]) +
+				else if(j==(Ny-1))
+					laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1][j]-2*dfdc[i][j]+dfdc[i-1][j]) +
 														std::pow(1/dy,2)*(dfdc[i][j+1-Ny]-2*dfdc[i][j]+dfdc[i][j-1]);
-								else
-									laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1][j]-2*dfdc[i][j]+dfdc[i-1][j]) +
+				else
+					laplace_dfdc[i][j] = std::pow(1/dx,2)*(dfdc[i+1][j]-2*dfdc[i][j]+dfdc[i-1][j]) +
 														std::pow(1/dy,2)*(dfdc[i][j+1]-2*dfdc[i][j]+dfdc[i][j-1]);
 
 				//Evolve the concentration profile
+
 				con[i][j] = con[i][j] + dtime*mobility*laplace_dfdc[i][j];
 				ttime += dtime;
 
+				//Calculate bulk energy
+				if(i<(Nx-1) && j<(Ny-1))
+					energy += con[i][j]*con[i][j]*(1-con[i][j])*(1-con[i][j])
+							+ (grad_coef/2.0)*((con[i+1][j]-con[i][j])*(con[i+1][j]-con[i][j]) + (con[i][j+1]-con[i][j])*(con[i][j+1]-con[i][j]));
 			}
 		}
+		energ<<energy<<std::endl;
+
 		//Write the Chemical Potential in a dat file at specific intervels
 		if(istep%1000 == 0){
 			std::string filename = "Chemical_Potential_at_t_"+std::to_string(istep)+".dat";
@@ -158,7 +168,7 @@ int main(int argc, char **argv) {
 			DerProf.close();
 		}
 		//Write the concentration profile at specific intervel
-		if(istep%1000 == 0){
+		if(istep%100==0){
 			std::string filename = "Concentration_Profile_t_" + std::to_string(istep) + ".dat";
 			std::ofstream ConcProf(filename);
 			for(int i=0;i<Nx;i++){
@@ -167,8 +177,8 @@ int main(int argc, char **argv) {
 			}
 			ConcProf.close();
 		}
-
 	}
+	energ.close();
 	for(int i=0;i<Nx;i++){
 		delete[] con[i];
 		delete[] mu[i];
