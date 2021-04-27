@@ -38,6 +38,7 @@ int main(int argc, char **argv) {
 
 	//Initial concentration profile
 	srand( (unsigned)time( NULL ) );
+
 	con = new double*[Nx];
 	mu = new double* [Nx];
 	dfdc = new double* [Nx];
@@ -50,7 +51,7 @@ int main(int argc, char **argv) {
 		laplace_con[i] = new double[Ny];
 		laplace_dfdc[i] = new double[Ny];
 	}
-	double noise = 0.02;
+	double noise = 0.5;
 	for(int i=0;i<Nx;i++){
 		for(int j=0;j<Ny;j++){
 			con[i][j] = c0 + noise*(0.5 - (float) rand()/RAND_MAX);
@@ -71,7 +72,7 @@ int main(int argc, char **argv) {
 		for(int i=0;i<Nx;i++){
 			for(int j=0;j<Ny;j++){
 				//Compute the chemical potential at each time step and each point
-				mu[i][j] = A*(2.0*con[i][j]*con[i][j]*std::pow((1-con[i][j]),2) + 2.0*std::pow(con[i][j],2)*(1-con[i][j]));
+				mu[i][j] = A*(2.0*con[i][j]*std::pow((1-con[i][j]),2) + 2.0*std::pow(con[i][j],2)*(1-con[i][j]));
 
 				//Compute laplacian of concentration in case of periodic BCs
 				if(i==0&&j==0)
