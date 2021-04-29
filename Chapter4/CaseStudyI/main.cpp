@@ -20,12 +20,11 @@ int main(int argc, char **argv) {
 	int Ny = 64;
 	double dx = 1.0;
 	double dy = 1.0;
-	double** con,**mu,**dfdc,**laplace_con,**laplace_dfdc;
+	double** con,**mu,**dfdc,**laplace_con,**laplace_dfdc,**con_temp;
 	double energy;
 
 	//Time Integration Parameters
 	int nstep = 10000;
-	int nprint = 50;
 	double dtime = 0.01;
 	double ttime = 0.0;
 
@@ -44,12 +43,14 @@ int main(int argc, char **argv) {
 	dfdc = new double* [Nx];
 	laplace_con = new double* [Nx];
 	laplace_dfdc = new double* [Nx];
+	con_temp = new double* [Nx];
 	for(int i=0;i<Nx;i++){
 		con[i] = new double[Ny];
 		mu[i] = new double[Ny];
 		dfdc[i] = new double[Ny];
 		laplace_con[i] = new double[Ny];
 		laplace_dfdc[i] = new double[Ny];
+		con_temp[i] = new double[Ny];
 	}
 	double noise = 0.5;
 	for(int i=0;i<Nx;i++){
@@ -69,10 +70,18 @@ int main(int argc, char **argv) {
 	//Evolve with Cahn Hilliard Formulation
 	for(int istep=0;istep<nstep;istep++){
 		energy = 0.0;
+		ttime += dtime;
 		for(int i=0;i<Nx;i++){
 			for(int j=0;j<Ny;j++){
+				//Calculate bulk energy
+				if(i<(Nx-1) && j<(Ny-1))
+					energy += con[i][j]*con[i][j]*(1-con[i][j])*(1-con[i][j])
+							+ (grad_coef/2.0)*((con[i+1][j]-con[i][j])*(con[i+1][j]-con[i][j]) + (con[i][j+1]-con[i][j])*(con[i][j+1]-con[i][j]));
+				else
+					energy += con[i][j]*con[i][j]*(1-con[i][j])*(1-con[i][j]);
+
 				//Compute the chemical potential at each time step and each point
-				mu[i][j] = A*(2.0*con[i][j]*std::pow((1-con[i][j]),2) + 2.0*std::pow(con[i][j],2)*(1-con[i][j]));
+				mu[i][j] = A*(2.0*con[i][j]*std::pow((1-con[i][j]),2) - 2.0*std::pow(con[i][j],2)*(1-con[i][j]));
 
 				//Compute laplacian of concentration in case of periodic BCs
 				if(i==0&&j==0)
@@ -137,14 +146,14 @@ int main(int argc, char **argv) {
 
 				//Evolve the concentration profile
 
-				con[i][j] = con[i][j] + dtime*mobility*laplace_dfdc[i][j];
-				ttime += dtime;
+				con_temp[i][j] = con[i][j] + dtime*mobility*laplace_dfdc[i][j];
 
-				//Calculate bulk energy
-				if(i<(Nx-1) && j<(Ny-1))
-					energy += con[i][j]*con[i][j]*(1-con[i][j])*(1-con[i][j])
-							+ (grad_coef/2.0)*((con[i+1][j]-con[i][j])*(con[i+1][j]-con[i][j]) + (con[i][j+1]-con[i][j])*(con[i][j+1]-con[i][j]));
 			}
+		}
+		//Backtransfering from temporary array to con array
+		for(int i=0;i<Nx;i++){
+			for(int j=0;j<Ny;j++)
+				con[i][j] = con_temp[i][j];
 		}
 		energ<<energy<<std::endl;
 
@@ -154,7 +163,7 @@ int main(int argc, char **argv) {
 			std::ofstream MuProf(filename);
 			for(int i=0;i<Nx;i++){
 				for(int j=0;j<Ny;j++)
-					MuProf << i <<"\t"<<j<<"\t"<<con[i][j] << "\n";
+					MuProf << i <<"\t"<<j<<"\t"<<mu[i][j] << "\n";
 			}
 			MuProf.close();
 		}
@@ -186,7 +195,11 @@ int main(int argc, char **argv) {
 		delete[] dfdc[i];
 		delete[] laplace_con[i];
 		delete[] laplace_dfdc[i];
+		delete[] con_temp[i];
+
 	}
+
+	delete[] con_temp;
 	delete[] laplace_dfdc;
 	delete[] laplace_con;
 	delete[] dfdc;
