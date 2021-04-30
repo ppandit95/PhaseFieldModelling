@@ -4,5 +4,5 @@ CaseStudyI : main.cpp
 run : CaseStudyI
 	./CaseStudyI 
 	
-clean : CaseStudyI Initial_Profile.*  Chemical_Potential_at_t_* Derivative_at_t_* Concentration_Profile_t_* Gibbs_Energy.dat
-	rm CaseStudyI Initial_Profile.* Chemical_Potential_at_t_* Derivative_at_t_* Concentration_Profile_t_* Gibbs_Energy.dat
+clean : CaseStudyI Output/Initial_Profile.*  Output/Chemical_Potential_at_t_* Output/Derivative_at_t_* Output/Concentration_Profile_t_* Output/Gibbs_Energy.dat
+	rm CaseStudyI Output/Initial_Profile.* Output/Chemical_Potential_at_t_* Output/Derivative_at_t_* Output/Concentration_Profile_t_* Output/Gibbs_Energy.dat

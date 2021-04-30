@@ -6,12 +6,17 @@
 #include<time.h>
 #include<fstream>
 #include<cmath>
+#include<string>
+#include<filesystem>
+#include <unistd.h>
+//using std::filesystem::current_path;
 struct SimParams{
 	int Nx = 64;
 	int Ny = 64;
 	double dx = 1.0;
 	double dy = 1.0;
 	double** con,**mu,**dfdc,**laplace_con,**laplace_dfdc,**con_temp;
+	char path[256];
 	
 };
 int main(int argc, char **argv) {
@@ -19,11 +24,14 @@ int main(int argc, char **argv) {
 	struct timespec begin,end;
 	clock_gettime(CLOCK_REALTIME,&begin);
 
-	//Write energy functional to dat file
-	std::ofstream energ("Gibbs_Energy.dat");
-
 	//Simulation cell parameters
 	SimParams p1;
+
+
+	//Write energy functional to dat file
+	std::string filename0 = getcwd(p1.path,256) + (std::string)"/Output/Gibbs_Energy.dat";
+	std::ofstream energ(filename0);
+
 
 	//Time Integration Parameters
 	int nstep = 10000;
@@ -61,9 +69,9 @@ int main(int argc, char **argv) {
 			p1.con[i][j] = c0 + noise*(0.5 - (float) rand()/RAND_MAX);
 		}
 	}
-
+	std::string filename = getcwd(p1.path,256) + (std::string)"/Output/Initial_Profile.dat";
 	//Write the initial Profile in a dat file
-	std::ofstream initProf("Initial_Profile.dat");
+	std::ofstream initProf(filename);
 	for(int i=0;i<p1.Nx;i++){
 		for(int j=0;j<p1.Ny;j++)
 			initProf << i <<"\t"<<j<<"\t"<<p1.con[i][j] << "\n";
@@ -162,7 +170,7 @@ int main(int argc, char **argv) {
 
 		//Write the Chemical Potential in a dat file at specific intervels
 		if(istep%1000 == 0){
-			std::string filename = "Chemical_Potential_at_t_"+std::to_string(istep)+".dat";
+			std::string filename = getcwd(p1.path,256) + (std::string)"/Output/Chemical_Potential_at_t_"+std::to_string(istep)+(std::string)".dat";
 			std::ofstream MuProf(filename);
 			for(int i=0;i<p1.Nx;i++){
 				for(int j=0;j<p1.Ny;j++)
@@ -172,7 +180,7 @@ int main(int argc, char **argv) {
 		}
 		//Write the Derivative in a dat file at specific intervels
 		if(istep%1000 == 0){
-		std::string filename = "Derivative_at_t_"+std::to_string(istep)+".dat";
+		std::string filename = getcwd(p1.path,256) +(std::string)"/Output/Derivative_at_t_"+std::to_string(istep)+(std::string)".dat";
 		std::ofstream DerProf(filename);
 		for(int i=0;i<p1.Nx;i++){
 				for(int j=0;j<p1.Ny;j++)
@@ -182,7 +190,7 @@ int main(int argc, char **argv) {
 		}
 		//Write the concentration profile at specific intervel
 		if(istep%1000==0){
-			std::string filename = "Concentration_Profile_t_" + std::to_string(istep) + ".dat";
+			std::string filename = getcwd(p1.path,256) + (std::string)"/Output/Concentration_Profile_t_" + std::to_string(istep) + (std::string)".dat";
 			std::ofstream ConcProf(filename);
 			for(int i=0;i<p1.Nx;i++){
 				for(int j=0;j<p1.Ny;j++)
