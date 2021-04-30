@@ -1,12 +1,12 @@
 using DelimitedFiles,Plots;pyplot()
-data0 = readdlm("/media/pushkar/Data/Personal Files/PhaseFieldModelling/Chapter4/CaseStudyI/Initial_Profile.dat")
-#=data1 = readdlm("/home/pushkar/Task_assignment_pics/AllenCahn2DFDM/Output-10.dat")
-data2 = readdlm("/home/pushkar/Task_assignment_pics/AllenCahn2DFDM/Output-20.dat")
-data5 = readdlm("/home/pushkar/Task_assignment_pics/AllenCahn2DFDM/Output-50.dat")
-data10 = readdlm("/home/pushkar/Task_assignment_pics/AllenCahn2DFDM/Output-100.dat")=#
-heatmap(data0,cgrad=[:blue :red])
-savefig("/media/pushkar/Data/Personal Files/PhaseFieldModelling/Chapter4/CaseStudyI/Initial_Profile.png")
-#=heatmap(data1,c=:greys)
-savefig("/home/pushkar/Task_assignment_pics/AllenCahn2DFDM/Output-10.png")
-heatmap(data2,c=:greys)
-savefig("/home/pushkar/Task_assignment_pics/AllenCahn2DFDM/Output-20.png")=#
+DIR = @__DIR__
+for i in 0:1000:9000
+    path = string(DIR,"/Concentration_Profile_t_",i,".dat")
+    data = reshape(readdlm(path)[:,3],64,64)
+    heatmap(data,cgrad=[:blue :red])
+    savefig(string(DIR,"/Results/Concentration_Profile_t_",i,".png"))
+end
+ path = string(DIR,"/Gibbs_Energy.dat")
+ data = readdlm(path)
+ plot(1:length(data),data,xlabel="Time",ylabel="Total Gibbs Energy",legend=false)
+ savefig(string(DIR,"/Results/Gibbs_Energy.png"))
