@@ -158,7 +158,6 @@ int main(int argc, char **argv) {
 				//Evolve the concentration profile
 
 				p1.con_temp[i][j] = p1.con[i][j] + dtime*mobility*p1.laplace_dfdc[i][j];
-
 			}
 		}
 		//Backtransfering from temporary array to con array
@@ -216,5 +215,8 @@ int main(int argc, char **argv) {
 	delete[] p1.dfdc;
 	delete[] p1.mu;
 	delete[] p1.con;
+
+	clock_gettime(CLOCK_REALTIME,&end);
+	std::cout<<"Elapsed Time : "<<(end.tv_sec-begin.tv_sec)<<" seconds "<<std::endl;
 	return 0;
 }
