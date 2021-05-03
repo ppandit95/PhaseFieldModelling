@@ -9,28 +9,20 @@
 #include<string>
 #include<filesystem>
 #include <unistd.h>
-//using std::filesystem::current_path;
-struct SimParams{
-	int Nx = 64;
-	int Ny = 64;
-	double dx = 1.0;
-	double dy = 1.0;
-	double** con,**mu,**dfdc,**laplace_con,**laplace_dfdc,**con_temp;
-	char path[256];
-	
-};
-struct TimeParams{
-	int nstep = 10000;
-	double dtime = 0.01;
-	double ttime = 0.0;
-};
+
+#include"src/structures.hpp"
+#include"src/SpinodalDecomposition.hpp"
+
+
 int main(int argc, char **argv) {
 	//Get initial wall time
 	struct timespec begin,end;
 	clock_gettime(CLOCK_REALTIME,&begin);
+	SpinodalDecomposition sd;
+
 
 	//Simulation cell parameters
-	SimParams p1;
+	SimParams p1 = sd.GetSimParams();
 
 
 	//Write energy functional to dat file
@@ -39,63 +31,34 @@ int main(int argc, char **argv) {
 
 
 	//Time Integration Parameters
-	TimeParams t1;
+	TimeParams t1 = sd.GetTimeParams();
 
 
 	//Material Specific Parameters
-	double c0 = 0.4;
-	double mobility = 1.0;
-	double grad_coef = 0.5;
-	double A = 1.0;
-	double energy;
+	MatParams m1 = sd.GetMatParams();
 
-	//Initial concentration profile
-	srand( (unsigned)time( NULL ) );
+	//Initial Concentration Profile
+	sd.Initial_Profile();
 
-	p1.con = new double*[p1.Nx];
-	p1.mu = new double* [p1.Nx];
-	p1.dfdc = new double* [p1.Nx];
-	p1.laplace_con = new double* [p1.Nx];
-	p1.laplace_dfdc = new double* [p1.Nx];
-	p1.con_temp = new double* [p1.Nx];
-	for(int i=0;i<p1.Nx;i++){
-		p1.con[i] = new double[p1.Ny];
-		p1.mu[i] = new double[p1.Ny];
-		p1.dfdc[i] = new double[p1.Ny];
-		p1.laplace_con[i] = new double[p1.Ny];
-		p1.laplace_dfdc[i] = new double[p1.Ny];
-		p1.con_temp[i] = new double[p1.Ny];
-	}
-	double noise = 0.01;
-	for(int i=0;i<p1.Nx;i++){
-		for(int j=0;j<p1.Ny;j++){
-			p1.con[i][j] = c0 + noise*(0.5 - (float) rand()/RAND_MAX);
-		}
-	}
 	std::string filename = getcwd(p1.path,256) + (std::string)"/Output/Initial_Profile.dat";
 	//Write the initial Profile in a dat file
-	std::ofstream initProf(filename);
-	for(int i=0;i<p1.Nx;i++){
-		for(int j=0;j<p1.Ny;j++)
-			initProf << i <<"\t"<<j<<"\t"<<p1.con[i][j] << "\n";
-		//initProf << std::endl;
-	}
+	sd.write_output(filename);
 
 	//Evolve with Cahn Hilliard Formulation
-	for(int istep=0;istep<t1.nstep;istep++){
-		energy = 0.0;
+	for(unsigned int istep=0;istep<t1.nstep;istep++){
+		m1.energy = 0.0;
 		t1.ttime += t1.dtime;
 		for(int i=0;i<p1.Nx;i++){
 			for(int j=0;j<p1.Ny;j++){
 				//Calculate bulk energy
 				if(i<(p1.Nx-1) && j<(p1.Ny-1))
-					energy += p1.con[i][j]*p1.con[i][j]*(1-p1.con[i][j])*(1-p1.con[i][j])
-							+ (grad_coef/2.0)*((p1.con[i+1][j]-p1.con[i][j])*(p1.con[i+1][j]-p1.con[i][j]) + (p1.con[i][j+1]-p1.con[i][j])*(p1.con[i][j+1]-p1.con[i][j]));
+					m1.energy += p1.con[i][j]*p1.con[i][j]*(1-p1.con[i][j])*(1-p1.con[i][j])
+							+ (m1.grad_coef/2.0)*((p1.con[i+1][j]-p1.con[i][j])*(p1.con[i+1][j]-p1.con[i][j]) + (p1.con[i][j+1]-p1.con[i][j])*(p1.con[i][j+1]-p1.con[i][j]));
 				else
-					energy += p1.con[i][j]*p1.con[i][j]*(1-p1.con[i][j])*(1-p1.con[i][j]);
+					m1.energy += p1.con[i][j]*p1.con[i][j]*(1-p1.con[i][j])*(1-p1.con[i][j]);
 
 				//Compute the chemical potential at each time step and each point
-				p1.mu[i][j] = A*(2.0*p1.con[i][j]*std::pow((1-p1.con[i][j]),2) - 2.0*std::pow(p1.con[i][j],2)*(1-p1.con[i][j]));
+				p1.mu[i][j] = m1.A*(2.0*p1.con[i][j]*std::pow((1-p1.con[i][j]),2) - 2.0*std::pow(p1.con[i][j],2)*(1-p1.con[i][j]));
 
 				//Compute laplacian of concentration in case of periodic BCs
 				if(i==0&&j==0)
@@ -127,7 +90,7 @@ int main(int argc, char **argv) {
 										std::pow(1/p1.dy,2)*(p1.con[i][j+1]-2*p1.con[i][j]+p1.con[i][j-1]);
 
 				//Compute functional derivative of free energy with concentration
-				p1.dfdc[i][j] = p1.mu[i][j] - grad_coef*p1.laplace_con[i][j];
+				p1.dfdc[i][j] = p1.mu[i][j] - m1.grad_coef*p1.laplace_con[i][j];
 
 				//Compute laplacian of functional derivative
 				if(i==0&&j==0)
@@ -160,7 +123,7 @@ int main(int argc, char **argv) {
 
 				//Evolve the concentration profile
 
-				p1.con_temp[i][j] = p1.con[i][j] + t1.dtime*mobility*p1.laplace_dfdc[i][j];
+				p1.con_temp[i][j] = p1.con[i][j] + t1.dtime*m1.mobility*p1.laplace_dfdc[i][j];
 			}
 		}
 		//Backtransfering from temporary array to con array
@@ -168,7 +131,7 @@ int main(int argc, char **argv) {
 			for(int j=0;j<p1.Ny;j++)
 				p1.con[i][j] = p1.con_temp[i][j];
 		}
-		energ<<energy<<std::endl;
+		energ<<m1.energy<<std::endl;
 
 		//Write the Chemical Potential in a dat file at specific intervels
 		if(istep%1000 == 0){
