@@ -19,6 +19,11 @@ struct SimParams{
 	char path[256];
 	
 };
+struct TimeParams{
+	int nstep = 10000;
+	double dtime = 0.01;
+	double ttime = 0.0;
+};
 int main(int argc, char **argv) {
 	//Get initial wall time
 	struct timespec begin,end;
@@ -34,9 +39,7 @@ int main(int argc, char **argv) {
 
 
 	//Time Integration Parameters
-	int nstep = 10000;
-	double dtime = 0.01;
-	double ttime = 0.0;
+	TimeParams t1;
 
 
 	//Material Specific Parameters
@@ -79,9 +82,9 @@ int main(int argc, char **argv) {
 	}
 
 	//Evolve with Cahn Hilliard Formulation
-	for(int istep=0;istep<nstep;istep++){
+	for(int istep=0;istep<t1.nstep;istep++){
 		energy = 0.0;
-		ttime += dtime;
+		t1.ttime += t1.dtime;
 		for(int i=0;i<p1.Nx;i++){
 			for(int j=0;j<p1.Ny;j++){
 				//Calculate bulk energy
@@ -157,7 +160,7 @@ int main(int argc, char **argv) {
 
 				//Evolve the concentration profile
 
-				p1.con_temp[i][j] = p1.con[i][j] + dtime*mobility*p1.laplace_dfdc[i][j];
+				p1.con_temp[i][j] = p1.con[i][j] + t1.dtime*mobility*p1.laplace_dfdc[i][j];
 			}
 		}
 		//Backtransfering from temporary array to con array
@@ -217,6 +220,6 @@ int main(int argc, char **argv) {
 	delete[] p1.con;
 
 	clock_gettime(CLOCK_REALTIME,&end);
-	std::cout<<"Elapsed Time : "<<(end.tv_sec-begin.tv_sec)<<" seconds "<<std::endl;
+	std::cout<<"Elapsed Time : "<<(end.tv_sec-begin.tv_sec)<<" seconds "<<(end.tv_nsec - begin.tv_nsec)<<" nanoseconds"<<std::endl;
 	return 0;
 }
