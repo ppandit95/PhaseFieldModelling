@@ -9,13 +9,12 @@
 #define SRC_STRUCTURES_HPP_
 
 struct SimParams{
-	int Nx;
-	int Ny;
+	unsigned int Nx;
+	unsigned int Ny;
 	double dx;
 	double dy;
 	double** con,**mu,**dfdc,**laplace_con,**laplace_dfdc,**con_temp;
 	char path[256];
-
 };
 struct TimeParams{
 	unsigned int nstep;
